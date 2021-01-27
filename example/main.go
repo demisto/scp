@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dtylman/scp"
+	"github.com/demisto/scp"
 	"golang.org/x/crypto/ssh"
 )
 
