@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
@@ -62,6 +63,12 @@ func CopyTo(sshClient *ssh.Client, local string, remote string) (int64, error) {
 	err = session.Wait()
 	log.Debugf("Copied %v bytes out of %v. err: %v stdout:%v. stderr:%v", n, fileInfo.Size(), err, stdout, stderr)
 	//NOTE: Process exited with status 1 is not an error, it just how scp work. (waiting for the next control message and we send EOF)
+
+	err = checkForErrors(stdout.String())
+	if err != nil {
+		return 0, err
+	}
+
 	return n, nil
 }
 
@@ -150,4 +157,12 @@ func copyN(writer io.Writer, src io.Reader, size int64) (int64, error) {
 		total += n
 	}
 	return total, nil
+}
+
+func checkForErrors(output string) error {
+	if strings.Contains(output, "Permission denied") {
+		return fmt.Errorf("permission denied")
+	}
+
+	return nil
 }
