@@ -55,10 +55,7 @@ func CopyTo(sshClient *ssh.Client, local string, remote string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	err = ack(writer)
-	if err != nil {
-		return 0, err
-	}
+	ackErr := ack(writer)
 
 	err = session.Wait()
 	log.Debugf("Copied %v bytes out of %v. err: %v stdout:%v. stderr:%v", n, fileInfo.Size(), err, stdout, stderr)
@@ -67,6 +64,10 @@ func CopyTo(sshClient *ssh.Client, local string, remote string) (int64, error) {
 	err = checkForErrors(stdout.String())
 	if err != nil {
 		return 0, err
+	}
+
+	if ackErr != nil {
+		return 0, ackErr
 	}
 
 	return n, nil
@@ -137,10 +138,10 @@ func ack(writer io.Writer) error {
 	var msg = []byte{0, 0, 10, 13}
 	n, err := writer.Write(msg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write ack: %w", err)
 	}
 	if n < len(msg) {
-		return errors.New("Failed to write ack buffer")
+		return errors.New("failed to write ack buffer fully")
 	}
 	return nil
 }
